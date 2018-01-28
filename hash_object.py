@@ -3,7 +3,6 @@ import os
 import hashlib
 import uuid
 
-
 class HashObject:
 
     BLOCKSIZE = 65536
@@ -16,15 +15,22 @@ class HashObject:
 
     def hash(self, filepath):
         tmp_filename = str(uuid.uuid4())
+        total_size = 0
 
         with open(filepath, 'rb') as fr:
             with open(os.path.join("/tmp", tmp_filename), 'wb') as fw:
                 # read file block by block
                 buf = fr.read(self.BLOCKSIZE)
-                while len(buf) > 0:
+                buf_len = len(buf)
+                total_size += buf_len
+
+                while buf_len > 0:
                     self.hash_algo.update(buf)
                     fw.write(buf)
+
                     buf = fr.read(self.BLOCKSIZE)
+                    buf_len = len(buf)
+                    total_size += buf_len
 
         # figure out the digest of the file
         digest = self.hash_algo.hexdigest()
@@ -37,11 +43,12 @@ class HashObject:
         # rename the file
         obj_src = os.path.join("/tmp", tmp_filename)
         obj_dst = os.path.join(self.REPO_OBJ_PATH, directory, digest)
-        if os.path.exists(obj_dst):
-            print("Object already exists in repo")
-            return
+        if not os.path.exists(obj_dst):
+            os.rename(obj_src, obj_dst)
+        # else:
+        #     print("Object already exists in repo")
 
-        os.rename(obj_src, obj_dst)
+        return digest, total_size
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
