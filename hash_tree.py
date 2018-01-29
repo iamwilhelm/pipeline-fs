@@ -19,10 +19,7 @@ class HashTree:
         obj_hasher = HashObject()
         total_size = 0
 
-        tree = {
-            'data': [],
-            'links': [] 
-        }
+        tree = self.init_tree()
 
         for file_path in glob.glob(os.path.join(dirpath, '*')):
             filename = self.path_leaf(file_path)
@@ -36,19 +33,36 @@ class HashTree:
                 (obj_digest, obj_size) = self.hash(file_path)
                 obj_type = 'tree'
 
-
-            tree['data'].append(obj_type)
-            tree['links'].append({
-                'name': filename,
-                'hash': obj_digest,
-                'size': obj_size
-            })
+            tree = self.update_tree(tree, filename, obj_type, obj_digest, obj_size)
             total_size += obj_size
 
-        tree_json = json.dumps(tree).encode('UTF-8')
-        self.hash_algo.update(tree_json)
+        digest = self.write_tree(tree)
+        print('tree', dirpath, digest, total_size)
 
+        return (digest, total_size)
+
+    def path_leaf(self, path):
+        head, tail = os.path.split(path)
+        return tail or os.path.basename(head)
+
+    def init_tree(self):
+        return { 'data': [], 'links': [] }
+
+    def update_tree(self, tree, filename, obj_type, obj_digest, obj_size):
+        tree['data'].append(obj_type)
+        tree['links'].append({
+            'name': filename,
+            'hash': obj_digest,
+            'size': obj_size
+        })
+        return tree
+
+    def write_tree(self, tree):
+        tree_json = json.dumps(tree).encode('UTF-8')
+
+        self.hash_algo.update(tree_json)
         digest = self.hash_algo.hexdigest()
+
         directory = digest[0:2]
         filename = digest[2:]
 
@@ -60,13 +74,7 @@ class HashTree:
         with open(dst_path, 'wb') as fw:
             fw.write(tree_json)
 
-        print('tree', dirpath, digest, total_size)
-
-        return (digest, total_size)
-
-    def path_leaf(self, path):
-        head, tail = os.path.split(path)
-        return tail or os.path.basename(head)
+        return digest
 
 
 if __name__ == "__main__":
