@@ -12,7 +12,6 @@ class HashTree:
     REPO_OBJ_PATH = os.path.join(REPO_ROOT, "objects")
 
     def __init__(self):
-        os.makedirs(self.REPO_OBJ_PATH, exist_ok = True)
         self.hash_algo = hashlib.sha256()
 
     def hash(self, dirpath):
