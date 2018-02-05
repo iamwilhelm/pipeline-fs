@@ -3,19 +3,14 @@ import os
 import glob
 import hashlib
 import json
+from helmspoint import Helmspoint
 
-from hash_object import HashObject
+from blob import Blob
 
-class HashTree:
-
-    REPO_ROOT = os.path.join(os.getcwd(), ".hmpt")
-    REPO_OBJ_PATH = os.path.join(REPO_ROOT, "objects")
-
-    def __init__(self):
-        self.hash_algo = hashlib.sha256()
+class Tree:
 
     def hash(self, dirpath):
-        obj_hasher = HashObject()
+        obj_hasher = Blob()
         total_size = 0
 
         tree = self.init_tree()
@@ -26,17 +21,17 @@ class HashTree:
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 (obj_digest, obj_size) = obj_hasher.hash(file_path)
                 obj_type = 'blob'
-                print(obj_type, file_path, obj_digest, obj_size)
+                print('blob', obj_digest[0:7], file_path, obj_size)
 
             elif os.path.exists(file_path) and os.path.isdir(file_path):
                 (obj_digest, obj_size) = self.hash(file_path)
                 obj_type = 'tree'
 
-            tree = self.update_tree(tree, filename, obj_type, obj_digest, obj_size)
+            tree = self.append_tree(tree, filename, obj_type, obj_digest, obj_size)
             total_size += obj_size
 
         digest = self.write_tree(tree)
-        print('tree', dirpath, digest, total_size)
+        print('tree', digest[0:7], dirpath, total_size)
 
         return (digest, total_size)
 
@@ -47,7 +42,7 @@ class HashTree:
     def init_tree(self):
         return { 'data': [], 'links': [] }
 
-    def update_tree(self, tree, filename, obj_type, obj_digest, obj_size):
+    def append_tree(self, tree, filename, obj_type, obj_digest, obj_size):
         tree['data'].append(obj_type)
         tree['links'].append({
             'name': filename,
@@ -58,26 +53,13 @@ class HashTree:
 
     def write_tree(self, tree):
         tree_json = json.dumps(tree).encode('UTF-8')
+        digest = hashlib.sha256(tree_json).hexdigest()
 
-        self.hash_algo.update(tree_json)
-        digest = self.hash_algo.hexdigest()
-
-        directory = digest[0:2]
-        filename = digest[2:]
-
-        # make the directory if it doesn't already exist
-        os.makedirs(os.path.join(self.REPO_OBJ_PATH, directory), exist_ok = True)
+        (directory, filename) = Helmspoint.digest_filepath(digest)
 
         # write it to object directory
-        dst_path = os.path.join(self.REPO_OBJ_PATH, directory, filename)
+        dst_path = os.path.join(Helmspoint.REPO_OBJ_PATH, directory, filename)
         with open(dst_path, 'wb') as fw:
             fw.write(tree_json)
 
         return digest
-
-
-if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        raise Exception("Need dirname")
-    dirpath = sys.argv[1]
-    HashTree().hash(dirpath)
