@@ -16,8 +16,8 @@ class Commit:
     def create(self, dirpath, message):
         tree_hasher = Tree()
 
-        commit = self.init_commit(message)
-        self.link_parent_commit(commit)
+        commit = self.init(message)
+        self.link_parent(commit)
 
         (tree_digest, tree_size) = tree_hasher.hash(dirpath)
         self.link_object(commit, 'tree', tree_digest, tree_size)
@@ -34,7 +34,7 @@ class Commit:
 
         return digest
 
-    def write_commit(self, commit):
+    def write(self, commit):
         commit_json = json.dumps(commit).encode('UTF-8')
         digest = hashlib.sha256(commit_json).hexdigest()
 
@@ -53,7 +53,7 @@ class Commit:
 
     ############################
 
-    def init_commit(self, message):
+    def init(self, message):
         return {
             'data': {
                 'type': 'commit',
@@ -63,7 +63,7 @@ class Commit:
             'links': []
         }
 
-    def link_parent_commit(self, commit):
+    def link_parent(self, commit):
         # find parent in HEAD, if it exists
         digest = self.getHeadCommit() 
 

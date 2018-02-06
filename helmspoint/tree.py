@@ -13,7 +13,7 @@ class Tree:
         obj_hasher = Blob()
         total_size = 0
 
-        tree = self.init_tree()
+        tree = self.init()
 
         for file_path in glob.glob(os.path.join(dirpath, '*')):
             filename = self.path_leaf(file_path)
@@ -27,10 +27,10 @@ class Tree:
                 (obj_digest, obj_size) = self.hash(file_path)
                 obj_type = 'tree'
 
-            tree = self.append_tree(tree, filename, obj_type, obj_digest, obj_size)
+            tree = self.append(tree, filename, obj_type, obj_digest, obj_size)
             total_size += obj_size
 
-        digest = self.write_tree(tree)
+        digest = self.write(tree)
         print('tree', digest[0:7], dirpath, total_size)
 
         return (digest, total_size)
@@ -39,10 +39,10 @@ class Tree:
         head, tail = os.path.split(path)
         return tail or os.path.basename(head)
 
-    def init_tree(self):
+    def init(self):
         return { 'data': [], 'links': [] }
 
-    def append_tree(self, tree, filename, obj_type, obj_digest, obj_size):
+    def append(self, tree, filename, obj_type, obj_digest, obj_size):
         tree['data'].append(obj_type)
         tree['links'].append({
             'name': filename,
@@ -51,7 +51,7 @@ class Tree:
         })
         return tree
 
-    def write_tree(self, tree):
+    def write(self, tree):
         tree_json = json.dumps(tree).encode('UTF-8')
         digest = hashlib.sha256(tree_json).hexdigest()
 
