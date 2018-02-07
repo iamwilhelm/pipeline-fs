@@ -28,7 +28,7 @@ class Commit:
         # self.link_stage(commit, stage_digest, stage_size)
 
         # write commit to file
-        digest = self.write_commit(commit)
+        digest = self.write(commit)
 
         print("%s %s" % (digest[0:9], message))
 

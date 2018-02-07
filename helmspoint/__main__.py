@@ -4,6 +4,9 @@ from blob import Blob
 from tree import Tree
 from commit import Commit
 
+from stage import Stage
+from dag import Dag
+
 cmd = sys.argv[1]
 
 #### Plumbing

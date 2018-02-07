@@ -4,7 +4,7 @@ import hashlib
 import uuid
 import json
 
-from helmspoint import Helmspoint
+from helmspoint.helmspoint import Helmspoint
 
 class Blob:
 
