@@ -3,9 +3,9 @@ import os
 import glob
 import hashlib
 import json
-from helmspoint import Helmspoint
 
-from blob import Blob
+from helmspoint.helmspoint import Helmspoint
+from helmspoint.blob import Blob
 
 class Tree:
 
@@ -34,6 +34,8 @@ class Tree:
         print('tree', digest[0:7], dirpath, total_size)
 
         return (digest, total_size)
+
+    #### private
 
     def path_leaf(self, path):
         head, tail = os.path.split(path)

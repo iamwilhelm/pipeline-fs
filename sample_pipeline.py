@@ -31,7 +31,7 @@ def fetch_all(urls):
 
 # @datatype("[string]", "[{ string: int }]")
 # @batch
-def word_count(pages):
+def word_count(pages, urls):
     counts = {}
     for page in pages:
         for token in page.split("\s+"):
@@ -50,11 +50,28 @@ def word_count_merge(counts):
 
     return total_count
 
+def check_some(urls):
+    return urls
+
+def parse_some(urls):
+    return urls
+
+def merge_some(counts):
+    return counts
+
 # TODO using names to reference kinda sucks
 p = Pipeline()
 p.append(load_csv)
 p.append(fetch_all, ["load_csv"])
-p.append(word_count, ["fetch_all"])
-p.append(word_count_merge, ["word_count"])
+p.append(check_some, ["load_csv"])
+p.append(parse_some, ["load_csv"])
+
+p.append(parse_some, ["load_csv"])
+p.append(word_count, ["fetch_all", "check_some"])
+
+p.append(merge_some, ["word_count"])
+p.append(word_count_merge, ["word_count", "parse_some"])
 
 p.status()
+
+p.run()

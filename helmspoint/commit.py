@@ -5,9 +5,9 @@ import dateutil.parser
 import json
 import hashlib
 
-from blob import Blob
-from tree import Tree
-from helmspoint import Helmspoint
+from helmspoint.blob import Blob
+from helmspoint.tree import Tree
+from helmspoint.helmspoint import Helmspoint
 
 # takes a snapshot of a data directory
 # TODO change name to DataCommit
@@ -24,6 +24,7 @@ class Commit:
 
         # TODO link the author
 
+        # link the pipeline
         # (stage_digest, stage_size) = pipeline_stage_hasher(filepath)
         # self.link_stage(commit, stage_digest, stage_size)
 

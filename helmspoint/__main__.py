@@ -31,7 +31,7 @@ elif cmd == "init":
 elif cmd == "commit":
     dirpath = sys.argv[2]
     message = sys.argv[3]
-    Commit().create(dirpath, message)
+    #Commit().create(dirpath, message)
 
 else:
     print("unrecognized command")

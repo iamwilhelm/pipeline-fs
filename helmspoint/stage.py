@@ -17,26 +17,37 @@ class Stage:
         ast_nodes = ast.parse(code)
         return ast.dump(ast_nodes)
 
+    # TODO does name belong here? for now, we keep name here for easy reference
     def __init__(self, func):
-        self.data = {
-            'version': sys.version,
-            'name': func.__name__,
-            'func': Stage.ast_dump(func)
-        }
+        self.digest = None
+        self.func = func
 
     def name(self):
-        return self.data['name']
+        return self.func.__name__
 
     def hash(self):
-        stage_json = json.dumps(self.data).encode('UTF-8')
-        digest = hashlib.sha256(stage_json).hexdigest()
+        if self.digest == None:
+            return self.write()
+        else:
+            return self.digest
 
-        (directory, filename) = Helmspoint.digest_filepath(digest)
+    def write(self):
+        stage_data = self.initial_data()
+        stage_json = json.dumps(stage_data).encode('UTF-8')
+        self.digest = hashlib.sha256(stage_json).hexdigest()
+
+        (directory, filename) = Helmspoint.digest_filepath(self.digest)
 
         # write it to object directory
         dst_path = os.path.join(Helmspoint.REPO_OBJ_PATH, directory, filename)
         with open(dst_path, 'wb') as fw:
             fw.write(stage_json)
 
-        return digest
+        return self.digest
 
+    def initial_data(self):
+        return {
+            'version': sys.version,
+            'name': self.func.__name__,
+            'func': Stage.ast_dump(self.func)
+        }
