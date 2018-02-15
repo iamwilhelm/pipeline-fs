@@ -69,7 +69,9 @@ class Dag:
         output_data = stage_func(**parents_mapping)
 
         # hash data and write the data to disk
-        datapath = os.path.join("datasource", "pipeline", dag_json['data']['name'])
+        pipe_result_path= os.path.join("datasource", "pipeline")
+        os.makedirs(pipe_result_path, exist_ok = True)
+        datapath = os.path.join(pipe_result_path, dag_json['data']['name'])
         with open(datapath, 'w') as f:
             json_data = json.dumps(output_data)
             f.write(json_data)
