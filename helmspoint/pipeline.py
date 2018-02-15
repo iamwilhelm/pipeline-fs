@@ -30,13 +30,19 @@ class Pipeline:
         # name / dag
         self.sinks = {}
 
-    def append(self, func, parent_names = []):
+        self.arg_map = {}
+
+    def append(self, func, **parent_mappings):
         # can write stage hash to disk, since it doesn't depend on anything else
         stage = Stage(func)
+
+        parent_names = list(parent_mappings.values())
+
         parents = [self.dags[name] for name in parent_names]
         dag = Dag(stage, parents)
+        self.arg_map[dag.stage_name()] = list(parent_mappings.keys())
 
-        # set upstream links and source and sinks
+        # do accounting for the sources and sinks
         if len(parent_names) == 0:
             self.sources[stage.name()] = dag
             self.sinks[stage.name()] = dag
@@ -48,24 +54,24 @@ class Pipeline:
 
         self.dags[stage.name()] = dag
 
-        return
+        return dag
 
     def run(self):
         visit_node = lambda dag_node: None
         sink_nodes = list(self.sinks.values())
         sorted_dags = self.reverse_topological_sort(visit_node, sink_nodes)
 
-        data_digests = []
-        stage_digests = []
+        # dag hash / data hash
+        data_digests = {}
 
         print("-------- resulting topological sort ---------")
         for dag in sorted_dags:
             dag.print()
-            stage_digests.append(dag.write())
-            # data_digests.append(dag.run())
+            dag.write()
+            data_digests[dag.hash()] = dag.run(self.arg_map, data_digests)
 
         # create a list and add all the data_digests to it
-        print(stage_digests)
+        print(data_digests)
 
         # create a list and add all sink nodes of pipeline to it
         # print(data_digests)
@@ -97,13 +103,6 @@ class Pipeline:
 
         return post_stack
 
-
-
-
-
-
-
-
     def status(self):
         print("--------- Dags -------------")
         print(self.dags)
@@ -111,7 +110,3 @@ class Pipeline:
         print(self.sources)
         print("--------- Sinks ----------")
         print(self.sinks)
-
-
-
-

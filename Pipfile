@@ -10,6 +10,8 @@ name = "pypi"
 pyarrow = "*"
 pandas = "*"
 jupyter = "*"
+cloudpickle = "*"
+"beautifulsoup4" = "*"
 
 
 [dev-packages]

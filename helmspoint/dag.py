@@ -3,6 +3,8 @@ import json
 import hashlib
 
 from helmspoint.helmspoint import Helmspoint
+from helmspoint.stage import Stage
+from helmspoint.blob import Blob
 
 # TODO dag and stage has the same write()
 # TODO get() should be the same also? 
@@ -11,23 +13,19 @@ class Dag:
     @staticmethod
     def get(digest):
         (directory, filename) = Helmspoint.digest_filepath(digest) 
-        filepath = os.path.join(directory, filename)
+        filepath = os.path.join(Helmspoint.REPO_OBJ_PATH, directory, filename)
         with open(filepath, 'rb') as f:
             raw = f.read()
         return json.loads(raw)
-
-    @staticmethod
-    def is_source(dag_data):
-        parent_links = []
-        for x in dag_data['links']:
-            if x['name'] == 'parent' and x['hash'] == Helmspoint.genesis_digest():
-                parent_links.append(x)
-        return len(parent_links) > 0
 
     def __init__(self, stage, parents = []):
         self.stage = stage
         self.parents = parents
         self.digest = None
+
+        # name / blob hash
+        # This need to be written to disk or something. maybe by pipeline as a commit?
+        self.data_map = {}
 
     def set_upstream(self, parents):
         self.parents.extend(parents)
@@ -35,12 +33,51 @@ class Dag:
     # NOTE should do the deserialization, because in a decentralized system,
     # you'll need to read from disk or database anyway, when you have lots
     # of different workers
-    def run(self):
-        # get the func
+    def run(self, arg_map, data_digests):
+        # get the dag
+        dag_json = Dag.get(self.digest)
+
+        # get the stage
+        func_link = next(link for link in dag_json['links'] if link['name'] == 'func')
+
         # deserialize the func
+        stage_func = Stage.get(func_link['hash'])
+
+        # use every parent dag hash to look up data.
+        parent_links = [link for link in dag_json['links'] if link['name'] == 'parent']
+        parent_dag_digests = map(lambda link: link['hash'], parent_links)
+
+        print("arg_map %s" % arg_map)
+        print("data_digests %s" % data_digests)
+        print("parent_dag_digests %s" % parent_dag_digests)
+
+        # build up data arguments to go into this stage
+        arg_names = arg_map[dag_json['data']['name']]
+        input_data = []
+        for parent_data_digest in parent_dag_digests:
+            data_digest = data_digests[parent_data_digest]
+            (directory, filepath) = Helmspoint.digest_filepath(data_digest)
+            datapath = os.path.join(Helmspoint.REPO_OBJ_PATH, directory, filepath)
+            with open(datapath, 'r') as f:
+                raw_data = f.read()
+                json_data = json.loads(raw_data)
+                input_data.append(json_data)
+
         # run it
-        # hash the resulting data and write to disk (update hash?)
-        return None
+        print("running stage: %s" % dag_json['data']['name'])
+        parents_mapping = dict(zip(arg_names, input_data))
+        output_data = stage_func(**parents_mapping)
+
+        # hash data and write the data to disk
+        datapath = os.path.join("datasource", "pipeline", dag_json['data']['name'])
+        with open(datapath, 'w') as f:
+            json_data = json.dumps(output_data)
+            f.write(json_data)
+        (data_digest, data_size) = Blob().hash(datapath)
+
+        print("----------")
+
+        return data_digest
 
     def print(self):
         print("dag: %s" % self.stage_name())
@@ -72,16 +109,17 @@ class Dag:
     ##### private
 
     def build(self):
-        dag_data = self.initial_data()
+        dag_data = self._build_initial_data()
         for parent in self.parents:
-            dag_data = self.build_parent_link(dag_data, parent) 
+            dag_data = self._build_parent_link(dag_data, parent) 
         return dag_data
 
-    def initial_data(self):
+    def _build_initial_data(self):
         self.stage.write()
         return {
             'data': {
-                'type': 'dag'
+                'type': 'dag',
+                'name': self.stage.name()
             },
             'links': [{
                 'name': 'func',
@@ -89,7 +127,7 @@ class Dag:
             }]
         }
 
-    def build_parent_link(self, dag_data, parent_dag):
+    def _build_parent_link(self, dag_data, parent_dag):
         parent_dag.write()
         dag_data['links'].append({
             'name': 'parent',
