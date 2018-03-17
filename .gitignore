@@ -1,4 +1,4 @@
-.hmpt
-.ipynb_checkpoints
 __pycache__
-datasource/pipeline
+.hmpt/
+.ipynb_checkpoints/
+
